@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Object Treasure Hunt!</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --dark: #2F3E46;
+            --light: #F7FFF7;
+            --success: #66BB6A;
+            --wrong: #EF5350;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Ubuntu', sans-serif;
+            background-color: #FFE66D;
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .quiz-container {
+            background-color: var(--light);
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 10px 0px #d4be43;
+            max-width: 600px;
+            width: 100%;
+            border: 4px solid var(--dark);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-top: 0;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .progress-bar {
+            background-color: #ddd;
+            border-radius: 20px;
+            height: 20px;
+            width: 100%;
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 2px solid var(--dark);
+        }
+
+        .progress {
+            background-color: var(--secondary);
+            height: 100%;
+            width: 5%;
+            transition: width 0.3s ease;
+        }
+
+        .score-board {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .question-box {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px dashed var(--dark);
+        }
+
+        pre {
+            background-color: var(--dark);
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .btn {
+            background-color: #fff;
+            border: 3px solid var(--dark);
+            border-radius: 15px;
+            padding: 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: transform 0.1s, background-color 0.2s;
+            text-align: left;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            background-color: #f9f9f9;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn.correct {
+            background-color: var(--success) !important;
+            color: white;
+        }
+
+        .btn.wrong {
+            background-color: var(--wrong) !important;
+            color: white;
+        }
+
+        .next-btn {
+            display: block;
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 1.3rem;
+            border: 3px solid var(--dark);
+            border-radius: 15px;
+            cursor: pointer;
+            box-shadow: 0 5px 0px #b83b3b;
+        }
+
+        .next-btn:hover {
+            background-color: #ff5252;
+        }
+
+        .next-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0px #b83b3b;
+        }
+
+        .result-screen {
+            text-align: center;
+        }
+
+        .result-screen h2 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .sparkle {
+            font-size: 4rem;
+        }
+
+        .hide {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div id="quiz-screen">
+            <h1>JS Object Hunt! 🧭</h1>
+            <div class="progress-bar">
+                <div id="progress" class="progress"></div>
+            </div>
+            <div class="score-board">
+                Question <span id="q-num">1</span> of 20 | Score: <span id="score">0</span>
+            </div>
+            <div id="question" class="question-box">
+                Loading question...
+            </div>
+            <div id="options" class="options-container">
+                </div>
+            <button id="next-btn" class="next-btn hide">Next Question ➡️</button>
+        </div>
+
+        <div id="result-screen" class="result-screen hide">
+            <h2>Adventure Complete!</h2>
+            <div class="sparkle">🏆</div>
+            <p style="font-size: 1.5rem;">You scored <span id="final-score">0</span> out of 20!</p>
+            <p id="feedback-msg" style="font-size: 1.2rem; font-weight: bold; color: var(--primary);"></p>
+            <button class="next-btn" onclick="location.reload()">Play Again 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            {
+                q: "What symbols do we use to start and end a blank JavaScript object?",
+                options: ["Square brackets [ ]", "Curly braces { }", "Parentheses ( )", "Speech marks \" \""],
+                answer: 1
+            },
+            {
+                q: "Look at this code. What is 'dog' called?\n<pre>let dog = {};</pre>",
+                options: ["A variable holding an object", "A function", "A string", "A number"],
+                answer: 0
+            },
+            {
+                q: "How do we separate keys and values inside an object?",
+                options: ["With a comma (,)", "With an equals sign (=)", "With a colon (:)", "With a space ( )"],
+                answer: 2
+            },
+            {
+                q: "Which of these correctly creates a 'cat' object with an age?",
+                options: [
+                    "let cat = { age = 3 };",
+                    "let cat = { age: 3 };",
+                    "let cat = ( age: 3 );",
+                    "let cat = [ age: 3 ];"
+                ],
+                answer: 1
+            },
+            {
+                q: "How do we separate two different properties inside an object?",
+                options: ["With a semi-colon (;)", "With a full stop (.)", "With a comma (,)", "With a plus (+)"],
+                answer: 2
+            },
+            {
+                q: "How would you read (get) the color of this car?\n<pre>let car = { color: 'red', speed: 50 };</pre>",
+                options: ["car.color", "car->color", "car(color)", "car['color'] only, dot doesn't work"],
+                answer: 0
+            },
+            {
+                q: "What is this way of reading a value called: `hero.power`?",
+                options: ["Bracket Notation", "Dot Notation", "Super Notation", "Secret Notation"],
+                answer: 1
+            },
+            {
+                q: "What is another valid way to read the color of this car?\n<pre>let car = { color: 'blue' };</pre>",
+                options: ["car['color']", "car[color]", "car{color}", "car('color')"],
+                answer: 0
+            },
+            {
+                q: "If an object doesn't have the property you look for, what does JS give you?",
+                options: ["An Error crash!", "null", "undefined", "0"],
+                answer: 2
+            },
+            {
+                q: "How do you change the 'score' inside this object to 10?\n<pre>let game = { score: 5 };</pre>",
+                options: ["game.score == 10;", "game.score = 10;", "game{score} = 10;", "score = 10;"],
+                answer: 1
+            },
+            {
+                q: "Can you add a brand NEW property to an object after it is already made?",
+                options: ["Yes, just assign a value to it!", "No, objects are locked forever.", "Yes, but only if it's empty.", "No, you can only change old ones."],
+                answer: 0
+            },
+            {
+                q: "What will this code do?\n<pre>let pet = { name: 'Fluffy' };\npet.type = 'Hamster';</pre>",
+                options: ["It crashes the computer.", "It changes the name to Hamster.", "It adds 'type: \"Hamster\"' to the pet.", "It deletes the name Fluffy."],
+                answer: 2
+            },
+            {
+                q: "What is the key in this property? `size: 'huge'`",
+                options: ["size", "'huge'", ":", "size: 'huge'"],
+                answer: 0
+            },
+            {
+                q: "What is the value in this property? `points: 100`",
+                options: ["points", "100", ":", "points: 100"],
+                answer: 1
+            },
+            {
+                q: "What happens here?\n<pre>let wizard = { mana: 50 };\nwizard.mana = wizard.mana + 10;</pre>",
+                options: ["mana becomes 10", "mana becomes 5010", "mana becomes 60", "It creates an error"],
+                answer: 2
+            },
+            {
+                q: "Which object is written perfectly without any syntax mistakes?",
+                options: [
+                    "let pizza = { toppings: 'cheese', size: 'large' };",
+                    "let pizza = { toppings: 'cheese' size: 'large' };",
+                    "let pizza = { toppings = 'cheese', size = 'large' };",
+                    "let pizza = { 'cheese', 'large' };"
+                ],
+                answer: 0
+            },
+            {
+                q: "If you want to use a variable called 'myHobby' to read a property, which do you use?",
+                options: ["user.myHobby", "user[myHobby]", "user(myHobby)", "user{myHobby}"],
+                answer: 1
+            },
+            {
+                q: "Can a JavaScript object hold a list (array) inside it?",
+                options: ["No, only words and numbers.", "Yes, objects can hold arrays and even other objects!", "No, arrays are too big.", "Only on Fridays."],
+                answer: 1
+            },
+            {
+                q: "What will pop up in the alert?\n<pre>let bag = { books: 3 };\nalert(bag.toys);</pre>",
+                options: ["3", "toys", "undefined", "An error box"],
+                answer: 2
+            },
+            {
+                q: "What is the true superpower of JavaScript Objects?",
+                options: [
+                    "They store data in alphabetical order automatically.",
+                    "They group related facts about one thing together neatly!",
+                    "They make your code run 100x faster.",
+                    "They turn text into real life objects."
+                ],
+                answer: 1
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let hasAnswered = false;
+
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionElement = document.getElementById('question');
+        const optionsContainer = document.getElementById('options');
+        const nextButton = document.getElementById('next-btn');
+        const scoreElement = document.getElementById('score');
+        const qNumElement = document.getElementById('q-num');
+        const progressBar = document.getElementById('progress');
+        const finalScoreElement = document.getElementById('final-score');
+        const feedbackMsg = document.getElementById('feedback-msg');
+
+        function startQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            hasAnswered = false;
+            nextButton.classList.add('hide');
+            optionsContainer.innerHTML = '';
+            
+            // Update tracking numbers
+            qNumElement.innerText = currentQuestionIndex + 1;
+            scoreElement.innerText = score;
+            progressBar.style.width = `${((currentQuestionIndex + 1) / quizData.length) * 100}%`;
+
+            let currentQuestion = quizData[currentQuestionIndex];
+            // Format line breaks for code blocks safely
+            questionElement.innerHTML = currentQuestion.q.replace(/\n/g, '<br>');
+
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('btn');
+                button.addEventListener('click', () => selectOption(button, index));
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function selectOption(selectedBtn, index) {
+            if (hasAnswered) return; // Prevent clicking multiple options
+            hasAnswered = true;
+
+            let correctAnswerIndex = quizData[currentQuestionIndex].answer;
+            const buttons = optionsContainer.querySelectorAll('.btn');
+
+            if (index === correctAnswerIndex) {
+                selectedBtn.classList.add('correct');
+                score++;
+                scoreElement.innerText = score;
+            } else {
+                selectedBtn.classList.add('wrong');
+                // Highlight the correct answer for learning
+                buttons[correctAnswerIndex].classList.add('correct');
+            }
+
+            nextButton.classList.remove('hide');
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextButton.innerText = "See Results 🏆";
+            }
+        }
+
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                showQuestion();
+                nextButton.innerText = "Next Question ➡️";
+            } else {
+                showResults();
+            }
+        });
+
+        function showResults() {
+            quizScreen.classList.add('hide');
+            resultScreen.classList.remove('hide');
+            finalScoreElement.innerText = score;
+
+            if (score === 20) {
+                feedbackMsg.innerText = "Absolute Perfection! You are a JavaScript Object Master Mind! 🧠⚡";
+            } else if (score >= 15) {
+                feedbackMsg.innerText = "Amazing job! You really know your way around objects! 🌟";
+            } else if (score >= 10) {
+                feedbackMsg.innerText = "Good effort! Keep practicing and you'll catch 'em all! 🐾";
+            } else {
+                feedbackMsg.innerText = "An excellent practice run. Try again to boost your score! 🚀";
+            }
+        }
+
+        // Start the game on load
+        startQuiz();
+    </script>
+</body>
+</html>
